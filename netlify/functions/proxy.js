@@ -1,42 +1,53 @@
 const https = require('https');
 
-exports.handler = async function(event) {
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzl9Gq_uLvQ02l56QxyHCm0R3-8X3NVOA3qfEGsEwQ72c8qnUniIIChgN-cMc8l6Wda/exec';
+function postWithRedirect(url, body, redirectCount) {
+  redirectCount = redirectCount || 0;
+  if (redirectCount > 5) return Promise.reject(new Error('Too many redirects'));
 
-  const body = event.body || '{}';
-
-  return new Promise((resolve) => {
-    const req = https.request(GAS_URL, {
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body)
+        'Content-Length': Buffer.byteLength(body),
+        'User-Agent': 'Mozilla/5.0'
       }
     }, (res) => {
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        resolve({
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type'
-          },
-          body: data
-        });
-      });
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        resolve(postWithRedirect(res.headers.location, body, redirectCount + 1));
+      } else {
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => resolve(data));
+      }
     });
 
-    req.on('error', (e) => {
-      resolve({
-        statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: e.message })
-      });
-    });
-
+    req.on('error', reject);
     req.write(body);
     req.end();
   });
+}
+
+exports.handler = async function(event) {
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzl9Gq_uLvQ02l56QxyHCm0R3-8X3NVOA3qfEGsEwQ72c8qnUniIIChgN-cMc8l6Wda/exec';
+  const body = event.body || '{}';
+
+  try {
+    const data = await postWithRedirect(GAS_URL, body);
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: data
+    };
+  } catch(e) {
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: e.message })
+    };
+  }
 };
