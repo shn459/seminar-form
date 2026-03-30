@@ -75,17 +75,15 @@ async function apiRequest(hostname, path, method, token, body) {
 async function getSettings(token) {
   const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
   
-  // まずスプレッドシートの全シート情報を取得
   const info = await apiRequest(
     'sheets.googleapis.com',
     `/v4/spreadsheets/${SPREADSHEET_ID}`,
     'GET', token, null
   );
   
-  // シート名一覧をエラーとして返す（デバッグ用）
-  const sheetNames = info.sheets ? info.sheets.map(s => s.properties.title) : ['no sheets'];
-  throw new Error('シート一覧：' + sheetNames.join(', '));
+  throw new Error(JSON.stringify(info).substring(0, 200));
 }
+
 
 
 async function getAvailableSlots(token) {
