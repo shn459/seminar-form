@@ -130,14 +130,26 @@ input[type="text"], input[type="email"], input[type="number"], input[type="tel"]
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwOSbW0ThYTMNlxI-Y13v3lIFjtGEs9wvHxlxQUO9IRWdw-cwz3sDnALiuMqIqaxo5n/exec';
 
 function callAPI(params, callback) {
+  var cbName = 'cb_' + Date.now();
+  params.callback = cbName;
   var url = GAS_URL + '?' + Object.keys(params).map(function(k) {
     return k + '=' + encodeURIComponent(params[k]);
   }).join('&');
-  fetch(url, { redirect: 'follow' })
-    .then(function(r) { return r.json(); })
-    .then(callback)
-    .catch(function(e) { alert('通信エラー：' + e.message); });
+
+  window[cbName] = function(data) {
+    delete window[cbName];
+    document.body.removeChild(script);
+    callback(data);
+  };
+
+  var script = document.createElement('script');
+  script.src = url;
+  script.onerror = function() {
+    alert('通信エラーが発生しました');
+  };
+  document.body.appendChild(script);
 }
+
 
 
 function loadSettings() {
