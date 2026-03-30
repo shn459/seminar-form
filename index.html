@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>セミナーアンケート</title>
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Helvetica Neue', sans-serif; background: #f5f5f5; padding: 20px; }
+.card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+h1 { text-align: center; font-size: 20px; line-height: 1.5; margin-bottom: 8px; }
+.subtitle { text-align: center; font-size: 13px; color: #666; margin-bottom: 4px; }
+.required-badge { background: #e53935; color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+.optional-badge { background: #888; color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+.question-label { font-weight: bold; font-size: 15px; margin-bottom: 12px; display: block; }
+input[type="text"], input[type="email"], input[type="number"], input[type="tel"], textarea {
+  width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-top: 4px;
+}
+.name-row { display: flex; gap: 10px; }
+.name-row input { flex: 1; }
+.radio-option, .check-option {
+  display: flex; align-items: center; padding: 12px; border: 1px solid #ddd;
+  border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 15px;
+}
+.radio-option input, .check-option input { margin-right: 10px; width: 18px; height: 18px; }
+.scale-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.scale-label { font-size: 12px; color: #666; }
+.scale-btn { flex: 1; text-align: center; }
+.scale-btn input { display: none; }
+.scale-btn label { display: block; padding: 10px 4px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 15px; text-align: center; }
+.scale-btn input:checked + label { background: #1a73e8; color: white; border-color: #1a73e8; }
+#consultation-section { display: none; }
+.submit-btn { width: 100%; padding: 16px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 17px; font-weight: bold; margin-top: 8px; }
+  </style>
+</head>
+<body onload="loadSettings()">
+<div class="card">
+  <h1 id="seminar-title">読み込み中...</h1>
+  <p class="subtitle" id="seminar-date"></p>
+  <p class="subtitle">野田FP事務所　野田俊介</p>
+</div>
+
+<div class="card">
+  <span class="question-label">氏名<span class="required-badge">必須</span></span>
+  <div class="name-row">
+    <input type="text" id="lastName" placeholder="姓">
+    <input type="text" id="firstName" placeholder="名">
+  </div>
+</div>
+
+<div class="card">
+  <span class="question-label">性別<span class="required-badge">必須</span></span>
+  <label class="radio-option"><input type="radio" name="gender" value="男性"> 男性</label>
+  <label class="radio-option"><input type="radio" name="gender" value="女性"> 女性</label>
+  <label class="radio-option"><input type="radio" name="gender" value="その他"> その他</label>
+</div>
+
+<div class="card">
+  <span class="question-label">年齢<span class="required-badge">必須</span></span>
+  <input type="number" id="age" placeholder="例）35">
+</div>
+
+<div class="card">
+  <span class="question-label">メールアドレス<span class="required-badge">必須</span></span>
+  <input type="email" id="email" placeholder="mail@example.com">
+</div>
+
+<div class="card">
+  <span class="question-label">セミナーの満足度<span class="required-badge">必須</span></span>
+  <div class="scale-row">
+    <span class="scale-label">不満</span>
+    <div class="scale-btn"><input type="radio" name="score" id="s1" value="1"><label for="s1">1</label></div>
+    <div class="scale-btn"><input type="radio" name="score" id="s2" value="2"><label for="s2">2</label></div>
+    <div class="scale-btn"><input type="radio" name="score" id="s3" value="3"><label for="s3">3</label></div>
+    <div class="scale-btn"><input type="radio" name="score" id="s4" value="4"><label for="s4">4</label></div>
+    <div class="scale-btn"><input type="radio" name="score" id="s5" value="5"><label for="s5">5</label></div>
+    <span class="scale-label">満足</span>
+  </div>
+</div>
+
+<div class="card">
+  <span class="question-label">満足度の理由<span class="optional-badge">任意</span></span>
+  <textarea id="scoreReason" rows="3" placeholder="よろしければ教えてください"></textarea>
+</div>
+
+<div class="card">
+  <span class="question-label">詳しく知りたい内容<span class="optional-badge">任意</span></span>
+  <div id="interests-container"></div>
+</div>
+
+<div class="card">
+  <span class="question-label">個別相談のご希望<span class="required-badge">必須</span></span>
+  <label class="radio-option"><input type="radio" name="consultation" value="全体的に相談したい" onclick="showConsultation()"> 全体的に相談したいことがある</label>
+  <label class="radio-option"><input type="radio" name="consultation" value="部分的に相談したい" onclick="showConsultation()"> 部分的に相談したいことがある</label>
+  <label class="radio-option"><input type="radio" name="consultation" value="いつか相談したい" onclick="hideConsultation()"> いつか相談したい</label>
+  <label class="radio-option"><input type="radio" name="consultation" value="相談しない" onclick="hideConsultation()"> 今のところ相談することはない</label>
+</div>
+
+<div id="consultation-section">
+  <div class="card">
+    <span class="question-label">希望日時<span class="required-badge">必須</span></span>
+    <p id="grid-loading">読み込み中...</p>
+    <div id="grid-container"></div>
+    <input type="hidden" id="selectedEventId">
+    <input type="hidden" id="selectedSlotStart">
+  </div>
+
+  <div class="card">
+    <span class="question-label">ご相談当日の出勤先<span class="required-badge">必須</span></span>
+    <label class="check-option"><input type="checkbox" name="office" value="浜松町"> 浜松町</label>
+    <label class="check-option"><input type="checkbox" name="office" value="在宅"> 在宅</label>
+    <label class="check-option"><input type="checkbox" name="office" value="未定"> 未定</label>
+    <label class="check-option"><input type="checkbox" name="office" value="その他"> その他</label>
+  </div>
+
+  <div class="card">
+    <span class="question-label">電話番号<span class="required-badge">必須</span></span>
+    <input type="tel" id="phone" placeholder="09012345678">
+  </div>
+</div>
+
+<div class="card">
+  <span class="question-label">ご意見・ご感想<span class="optional-badge">任意</span></span>
+  <textarea id="comment" rows="3" placeholder="自由にご記入ください"></textarea>
+</div>
+
+<button class="submit-btn" onclick="submitForm()">回答する</button>
+
+<script>
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbwOSbW0ThYTMNlxI-Y13v3lIFjtGEs9wvHxlxQUO9IRWdw-cwz3sDnALiuMqIqaxo5n/exec';
+
+function callAPI(params, callback) {
+  var url = GAS_URL + '?' + Object.keys(params).map(function(k) {
+    return k + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(callback)
+    .catch(function(e) { alert('通信エラー：' + e.message); });
+}
+
+function loadSettings() {
+  callAPI({ action: 'getSettings' }, function(settings) {
+    document.getElementById('seminar-title').innerText = settings.seminarName;
+    document.getElementById('seminar-date').innerText = settings.seminarDate;
+    var container = document.getElementById('interests-container');
+    container.innerHTML = '';
+    settings.interests.forEach(function(item) {
+      var label = document.createElement('label');
+      label.className = 'check-option';
+      label.innerHTML = '<input type="checkbox" value="' + item + '"> ' + item;
+      container.appendChild(label);
+    });
+  });
+}
+
+function showConsultation() {
+  document.getElementById('consultation-section').style.display = 'block';
+  loadCalendar();
+}
+
+function hideConsultation() {
+  document.getElementById('consultation-section').style.display = 'none';
+}
+
+function loadCalendar() {
+  callAPI({ action: 'getSlots' }, renderGrid);
+}
+
+function renderGrid(slots) {
+  document.getElementById('grid-loading').style.display = 'none';
+
+  var slotMap = {};
+  slots.forEach(function(slot) {
+    var start = new Date(slot.start);
+    var key = start.getFullYear() + '-' + (start.getMonth()+1) + '-' + start.getDate() + '-' + start.getHours();
+    slotMap[key] = slot;
+  });
+
+  var today = new Date();
+  today.setHours(0,0,0,0);
+  var startDay = new Date(today);
+  var dow = startDay.getDay();
+  var diff = dow === 0 ? -6 : 1 - dow;
+  startDay.setDate(startDay.getDate() + diff);
+
+  window.slotMap = slotMap;
+  window.today = today;
+  window.originStart = new Date(startDay);
+  window.currentStart = new Date(startDay);
+  renderWeek();
+}
+
+function renderWeek() {
+  var slotMap = window.slotMap;
+  var today = window.today;
+  var startDay = new Date(window.currentStart);
+  var dayNames = ['月','火','水','木','金','土','日'];
+  var hours = [10,11,12,13,14,15,16,17,18,19,20,21];
+
+  var week = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(startDay);
+    d.setDate(startDay.getDate() + i);
+    week.push(d);
+  }
+
+  var firstDay = week[0];
+  var lastDay = week[6];
+  var periodLabel = (firstDay.getMonth()+1) + '/' + firstDay.getDate() + ' 〜 ' + (lastDay.getMonth()+1) + '/' + lastDay.getDate();
+
+  var html = '<p style="text-align:center; font-size:13px; color:#555; margin-bottom:8px">' + periodLabel + '</p>';
+  html += '<div style="overflow-x:auto"><table style="border-collapse:collapse; text-align:center; font-size:13px;">';
+  html += '<tr><th style="background:#fafafa; border:1px solid #e0e0e0; padding:6px 8px; white-space:nowrap">開始時刻</th>';
+  week.forEach(function(date, i) {
+    var isPast = date < today;
+    var color = i === 5 ? '#1a73e8' : i === 6 ? '#e53935' : '#333';
+    var textColor = isPast ? '#ccc' : color;
+    var dateStr = (date.getMonth()+1) + '/' + date.getDate();
+    html += '<th style="border:1px solid #e0e0e0; padding:6px 4px; min-width:48px; background:#fafafa; color:' + textColor + '; font-weight:normal">' + dateStr + '<br>' + dayNames[i] + '</th>';
+  });
+  html += '</tr>';
+
+  hours.forEach(function(hour) {
+    html += '<tr><td style="background:#fafafa; border:1px solid #e0e0e0; padding:6px 8px; color:#555; white-space:nowrap">' + hour + ':00</td>';
+    week.forEach(function(date, i) {
+      var isPast = date < today;
+      var key = date.getFullYear() + '-' + (date.getMonth()+1) + '-' + date.getDate() + '-' + hour;
+      var slot = slotMap[key];
+      if (!isPast && slot) {
+        html += '<td style="border:1px solid #e0e0e0; padding:4px"><label style="cursor:pointer; display:inline-block"><input type="radio" name="slot" value="' + slot.id + '" data-start="' + slot.start + '" style="display:none"><span style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; border:2px solid #26a69a; color:#26a69a; font-size:16px;">○</span></label></td>';
+      } else {
+        html += '<td style="border:1px solid #e0e0e0; padding:4px; color:#ddd; font-size:15px">×</td>';
+      }
+    });
+    html += '</tr>';
+  });
+
+  html += '</table></div>';
+  var isPrevDisabled = startDay.getTime() <= window.originStart.getTime();
+  html += '<div style="display:flex; justify-content:space-between; margin-top:12px"><button onclick="navigateGrid(-7)" ' + (isPrevDisabled ? 'disabled' : '') + ' style="padding:10px 20px; border:1px solid ' + (isPrevDisabled ? '#ccc' : '#26a69a') + '; border-radius:8px; background:white; color:' + (isPrevDisabled ? '#ccc' : '#26a69a') + '; font-size:14px; cursor:' + (isPrevDisabled ? 'default' : 'pointer') + '">← 前の週</button><button onclick="navigateGrid(7)" style="padding:10px 20px; border:1px solid #26a69a; border-radius:8px; background:white; color:#26a69a; font-size:14px; cursor:pointer">次の週 →</button></div>';
+
+  document.getElementById('grid-container').innerHTML = html;
+
+  document.querySelectorAll('input[name="slot"]').forEach(function(input) {
+    input.addEventListener('change', function() {
+      document.querySelectorAll('input[name="slot"]').forEach(function(r) {
+        r.nextElementSibling.style.background = 'white';
+        r.nextElementSibling.style.color = '#26a69a';
+      });
+      this.nextElementSibling.style.background = '#26a69a';
+      this.nextElementSibling.style.color = 'white';
+      selectSlot(this);
+    });
+  });
+}
+
+function navigateGrid(days) {
+  var current = new Date(window.currentStart);
+  current.setDate(current.getDate() + days);
+  window.currentStart = new Date(current);
+  renderWeek();
+}
+
+function selectSlot(el) {
+  document.getElementById('selectedEventId').value = el.value;
+  document.getElementById('selectedSlotStart').value = el.dataset.start;
+}
+
+function submitForm() {
+  var lastName = document.getElementById('lastName').value;
+  var firstName = document.getElementById('firstName').value;
+  var gender = document.querySelector('input[name="gender"]:checked');
+  var age = document.getElementById('age').value;
+  var email = document.getElementById('email').value;
+  var score = document.querySelector('input[name="score"]:checked');
+  var consultation = document.querySelector('input[name="consultation"]:checked');
+
+  if (!lastName || !firstName || !gender || !age || !email || !score || !consultation) {
+    alert('必須項目をすべて入力してください');
+    return;
+  }
+
+  var consultationValue = consultation.value;
+  var formData = {
+    lastName: lastName, firstName: firstName, gender: gender.value,
+    age: age, email: email, score: score.value,
+    scoreReason: document.getElementById('scoreReason').value,
+    interests: Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                .filter(function(el){ return el.name !== 'office'; })
+                .map(function(el){ return el.value; }).join('、'),
+    consultation: consultationValue,
+    comment: document.getElementById('comment').value
+  };
+
+  if (consultationValue === '全体的に相談したい' || consultationValue === '部分的に相談したい') {
+    var eventId = document.getElementById('selectedEventId').value;
+    var slotStart = document.getElementById('selectedSlotStart').value;
+    var office = Array.from(document.querySelectorAll('input[name="office"]:checked'))
+                  .map(function(el){ return el.value; }).join('、');
+    var phone = document.getElementById('phone').value;
+
+    if (!eventId || !office || !phone) {
+      alert('日程・出勤先・電話番号を入力してください');
+      return;
+    }
+
+    formData.slotStart = slotStart;
+    formData.office = office;
+    formData.phone = phone;
+
+    callAPI({ action: 'bookSlot', eventId: eventId, formData: JSON.stringify(formData) }, function(msg) {
+      showComplete(msg);
+    });
+  } else {
+    callAPI({ action: 'saveToSheet', formData: JSON.stringify(formData) }, function() {
+      showComplete('回答を送信しました。');
+    });
+  }
+}
+
+function showComplete(msg) {
+  document.body.innerHTML =
+    '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:#f5f5f5; padding:20px">' +
+    '<div style="background:white; border-radius:16px; padding:40px 24px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.1); max-width:400px; width:100%">' +
+    '<div style="font-size:60px; margin-bottom:16px">✅</div>' +
+    '<h2 style="font-size:20px; margin-bottom:12px; color:#333">送信完了</h2>' +
+    '<p style="font-size:15px; color:#555; line-height:1.6; margin-bottom:8px">' + msg + '</p>' +
+    '<p style="font-size:14px; color:#888; line-height:1.6">ご回答ありがとうございました。<br>野田FP事務所 野田俊介</p>' +
+    '</div></div>';
+}
+</script>
+</body>
+</html>
