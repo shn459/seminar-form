@@ -131,25 +131,16 @@ var GAS_URL = '/.netlify/functions/proxy';
 
 
 function callAPI(params, callback) {
-  var cbName = 'cb_' + Date.now();
-  params.callback = cbName;
-  var url = GAS_URL + '?' + Object.keys(params).map(function(k) {
-    return k + '=' + encodeURIComponent(params[k]);
-  }).join('&');
-
-  window[cbName] = function(data) {
-    delete window[cbName];
-    document.body.removeChild(script);
-    callback(data);
-  };
-
-  var script = document.createElement('script');
-  script.src = url;
-  script.onerror = function() {
-    alert('通信エラーが発生しました');
-  };
-  document.body.appendChild(script);
+  fetch('/.netlify/functions/proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  })
+  .then(function(r) { return r.json(); })
+  .then(callback)
+  .catch(function(e) { alert('通信エラー：' + e.message); });
 }
+
 
 
 
