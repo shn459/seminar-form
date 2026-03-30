@@ -154,18 +154,10 @@ function callAPI(params, callback) {
 
 function loadSettings() {
   callAPI({ action: 'getSettings' }, function(settings) {
-    document.getElementById('seminar-title').innerText = settings.seminarName;
-    document.getElementById('seminar-date').innerText = settings.seminarDate;
-    var container = document.getElementById('interests-container');
-    container.innerHTML = '';
-    settings.interests.forEach(function(item) {
-      var label = document.createElement('label');
-      label.className = 'check-option';
-      label.innerHTML = '<input type="checkbox" value="' + item + '"> ' + item;
-      container.appendChild(label);
-    });
+    alert(JSON.stringify(settings));
   });
 }
+
 
 function showConsultation() {
   document.getElementById('consultation-section').style.display = 'block';
