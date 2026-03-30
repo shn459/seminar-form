@@ -154,9 +154,23 @@ function callAPI(params, callback) {
 
 function loadSettings() {
   callAPI({ action: 'getSettings' }, function(settings) {
-    alert(JSON.stringify(settings));
+    if (settings && settings.seminarName) {
+      document.getElementById('seminar-title').innerText = settings.seminarName;
+      document.getElementById('seminar-date').innerText = settings.seminarDate;
+      var container = document.getElementById('interests-container');
+      container.innerHTML = '';
+      settings.interests.forEach(function(item) {
+        var label = document.createElement('label');
+        label.className = 'check-option';
+        label.innerHTML = '<input type="checkbox" value="' + item + '"> ' + item;
+        container.appendChild(label);
+      });
+    } else {
+      alert('設定エラー：' + JSON.stringify(settings));
+    }
   });
 }
+
 
 
 function showConsultation() {
