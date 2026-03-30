@@ -133,11 +133,12 @@ function callAPI(params, callback) {
   var url = GAS_URL + '?' + Object.keys(params).map(function(k) {
     return k + '=' + encodeURIComponent(params[k]);
   }).join('&');
-  fetch(url)
+  fetch(url, { redirect: 'follow' })
     .then(function(r) { return r.json(); })
     .then(callback)
     .catch(function(e) { alert('通信エラー：' + e.message); });
 }
+
 
 function loadSettings() {
   callAPI({ action: 'getSettings' }, function(settings) {
