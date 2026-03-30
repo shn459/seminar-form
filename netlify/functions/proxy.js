@@ -74,24 +74,19 @@ async function apiRequest(hostname, path, method, token, body) {
 
 async function getSettings(token) {
   const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
-  const data = await apiRequest(
+  
+  // まずスプレッドシートの全シート情報を取得
+  const info = await apiRequest(
     'sheets.googleapis.com',
-    `/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent('アンケート設定')}`,
+    `/v4/spreadsheets/${SPREADSHEET_ID}`,
     'GET', token, null
   );
-
-  const settings = { seminarName: '', seminarDate: '', interests: [] };
-  if (data.values) {
-    data.values.forEach(row => {
-      const key = (row[0] || '').trim();
-      const val = (row[1] || '').trim();
-      if (key === 'セミナー名') settings.seminarName = val;
-      else if (key === '日付') settings.seminarDate = val;
-      else if (key.indexOf('選択肢') === 0 && val) settings.interests.push(val);
-    });
-  }
-  return settings;
+  
+  // シート名一覧をエラーとして返す（デバッグ用）
+  const sheetNames = info.sheets ? info.sheets.map(s => s.properties.title) : ['no sheets'];
+  throw new Error('シート一覧：' + sheetNames.join(', '));
 }
+
 
 async function getAvailableSlots(token) {
   const CALENDAR_ID = process.env.CALENDAR_ID;
