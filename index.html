@@ -127,7 +127,8 @@ input[type="text"], input[type="email"], input[type="number"], input[type="tel"]
 <button class="submit-btn" onclick="submitForm()">回答する</button>
 
 <script>
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbwOSbW0ThYTMNlxI-Y13v3lIFjtGEs9wvHxlxQUO9IRWdw-cwz3sDnALiuMqIqaxo5n/exec';
+var GAS_URL = '/.netlify/functions/proxy';
+
 
 function callAPI(params, callback) {
   var cbName = 'cb_' + Date.now();
