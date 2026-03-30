@@ -74,15 +74,25 @@ async function apiRequest(hostname, path, method, token, body) {
 
 async function getSettings(token) {
   const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
-  
-  const info = await apiRequest(
+  const data = await apiRequest(
     'sheets.googleapis.com',
-    `/v4/spreadsheets/${SPREADSHEET_ID}`,
+    `/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent('アンケート設定')}`,
     'GET', token, null
   );
-  
-  throw new Error(JSON.stringify(info).substring(0, 200));
+
+  const settings = { seminarName: '', seminarDate: '', interests: [] };
+  if (data.values) {
+    data.values.forEach(row => {
+      const key = (row[0] || '').trim();
+      const val = (row[1] || '').trim();
+      if (key === 'セミナー名') settings.seminarName = val;
+      else if (key === '日付') settings.seminarDate = val;
+      else if (key.indexOf('選択肢') === 0 && val) settings.interests.push(val);
+    });
+  }
+  return settings;
 }
+
 
 
 
