@@ -76,7 +76,7 @@ async function getSettings(token) {
   const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
   const data = await apiRequest(
     'sheets.googleapis.com',
-    `/v4/spreadsheets/${SPREADSHEET_ID}/values/%E3%82%A2%E3%83%B3%E3%82%B1%E3%83%BC%E3%83%88%E8%A8%AD%E5%AE%9A`,
+    `/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent('アンケート設定')}`,
     'GET', token, null
   );
 
