@@ -131,22 +131,22 @@ var GAS_URL = '/.netlify/functions/proxy';
 
 
 function callAPI(params, callback) {
-  fetch('/.netlify/functions/proxy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params)
-  })
-  .then(function(r) { return r.text(); })
-  .then(function(text) {
-    try {
-      var data = JSON.parse(text);
-      callback(data);
-    } catch(e) {
-      alert('JSONパースエラー：' + text.substring(0, 100));
-    }
-  })
-  .catch(function(e) { alert('通信エラー：' + e.message); });
+  var query = Object.keys(params).map(function(k) {
+    return k + '=' + encodeURIComponent(typeof params[k] === 'object' ? JSON.stringify(params[k]) : params[k]);
+  }).join('&');
+
+  fetch('/.netlify/functions/proxy?' + query)
+    .then(function(r) { return r.text(); })
+    .then(function(text) {
+      try {
+        callback(JSON.parse(text));
+      } catch(e) {
+        alert('JSONパースエラー：' + text.substring(0, 100));
+      }
+    })
+    .catch(function(e) { alert('通信エラー：' + e.message); });
 }
+
 
 
 
