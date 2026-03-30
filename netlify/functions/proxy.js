@@ -1,34 +1,36 @@
 const https = require('https');
 
-function postToGAS(url, body) {
+function getWithRedirect(url, redirectCount) {
+  redirectCount = redirectCount || 0;
+  if (redirectCount > 10) return Promise.reject(new Error('Too many redirects'));
+
   return new Promise(function(resolve, reject) {
-    var data = Buffer.from(body);
-    var options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': data.length,
-        'User-Agent': 'Mozilla/5.0'
+    https.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    }, function(res) {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        resolve(getWithRedirect(res.headers.location, redirectCount + 1));
+      } else {
+        var data = '';
+        res.on('data', function(chunk) { data += chunk; });
+        res.on('end', function() { resolve(data); });
       }
-    };
-
-    var req = https.request(url, options, function(res) {
-      var result = '';
-      res.on('data', function(chunk) { result += chunk; });
-      res.on('end', function() { resolve(result); });
-    });
-
-    req.on('error', function(e) { reject(e); });
-    req.write(data);
-    req.end();
+    }).on('error', reject);
   });
 }
 
 exports.handler = function(event, context, callback) {
-  var GAS_URL = 'https://script.google.com/macros/s/AKfycbzl9Gq_uLvQ02l56QxyHCm0R3-8X3NVOA3qfEGsEwQ72c8qnUniIIChgN-cMc8l6Wda/exec';
-  var body = event.body || '{}';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxMip0eOAxtY-RHMilvcDzkAcVrU8iNnRMG4u7HKSh2vWyv2U9MHN8Vxn74gFJX8M7o/exec';
+  
+  var params = event.queryStringParameters || {};
+  var query = Object.keys(params).map(function(k) {
+    return k + '=' + encodeURIComponent(params[k]);
+  }).join('&');
 
-  postToGAS(GAS_URL, body).then(function(data) {
+  var url = GAS_URL + (query ? '?' + query : '');
+
+  getWithRedirect(url).then(function(data) {
     callback(null, {
       statusCode: 200,
       headers: {
