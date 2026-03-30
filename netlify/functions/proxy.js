@@ -1,25 +1,47 @@
 const https = require('https');
 
-function postWithRedirect(url, body, redirectCount) {
-  redirectCount = redirectCount || 0;
-  if (redirectCount > 5) return Promise.reject(new Error('Too many redirects'));
-
-  return new Promise((resolve, reject) => {
-    console.log('Requesting URL:', url, 'redirect count:', redirectCount);
-    const req = https.request(url, {
+function postToGAS(url, body) {
+  return new Promise(function(resolve, reject) {
+    var data = Buffer.from(body);
+    var options = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
+        'Content-Length': data.length,
         'User-Agent': 'Mozilla/5.0'
       }
-    }, (res) => {
-      console.log('Status:', res.statusCode, 'Location:', res.headers.location);
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        res.resume();
-        resolve(postWithRedirect(res.headers.location, body, redirectCount + 1));
-      } else {
-        let data = '';
-        res.on('data', chunk => { data += chunk; });
-        res.on('end', () => {
-          console.log('Response data (​​​​​​​​​​​​​​​​
+    };
+
+    var req = https.request(url, options, function(res) {
+      var result = '';
+      res.on('data', function(chunk) { result += chunk; });
+      res.on('end', function() { resolve(result); });
+    });
+
+    req.on('error', function(e) { reject(e); });
+    req.write(data);
+    req.end();
+  });
+}
+
+exports.handler = function(event, context, callback) {
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbzl9Gq_uLvQ02l56QxyHCm0R3-8X3NVOA3qfEGsEwQ72c8qnUniIIChgN-cMc8l6Wda/exec';
+  var body = event.body || '{}';
+
+  postToGAS(GAS_URL, body).then(function(data) {
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: data
+    });
+  }).catch(function(e) {
+    callback(null, {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: e.message })
+    });
+  });
+};
